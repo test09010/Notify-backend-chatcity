@@ -1,16 +1,17 @@
 const express = require('express');
 const cors = require('cors');
 const admin = require('firebase-admin');
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔐 Service Account JSON (আপনার দেওয়া প্রাইভেট কী সহ)
+// Firebase Service Account
 const serviceAccount = {
   type: "service_account",
   project_id: "chatcity-63c68",
   private_key_id: "a5b9fd1d5bc3d3c43dcd65faea9f6b796b6e3e50",
-  private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCwsEYm1BZmy6HS\n97BUKXyoVE+GerAwDp5O8K8BMSZ5rYGV1myoxEJJKed6iWl6y/nlJ9V9e8mtfe/G\nBxc8O0xe4lpBOBG2BGKWAfNlW91jZV2gI+kUhvpARsWfxKqdKrqrUTQCgUDbmKn5\nnX1iGiskl30OlvrOnmtmiPq/ocULdsUmlZag0zH4GwLYlJFNIuTJ2wDItzDehvY3\n7bhztpVaI/tWxxJKXpXa9CO9aXFG8lYFi9l8wf2IdJaR3zHbNTMnSvDthOVZbPVL\nQlPxYdMqRGn5OKFfG5pJDyHiJgF5NllupnIgkDZAjjAy20NFQFleVUUHcon3C80S\nr0YHlhrRAgMBAAECggEAB0aqC+Qq3D61XjeDmhKnitPGftlnbyIx+hqanVYjoUoA\nKq5E5R4IZASLDxJwrt0uoDV/ytolteyYSreM6RbAzE0+Vd5YCd6kO+zOg/F4lGTW\nqj8iVH1iubIEZkH6O+zIGUEXvwTpOaXPtZsbAEbHOSt5G5hDca3nyrYYO9sevvwa\nifLz/RGzDcnGIZIF8L0RTdECRw0fGEAghvs3fJarPQiA8rpbwxNbmEhtN3NoyEzD\nGKAEBtD/swbRETX1LBuBULaqDnEWp1yLC56haWa5WJXgCOQ/b6s7Hvn1GzKwdTaZ\nuZ9nKhmdcjJNwDYJbR6aP2xrP0XMPEWYgnBLdgJ3QQKBgQDVKFQR6WSKWPbAUtwO\nkT9jClp7mMPeiQO8Vcvnd482YoeY5UyIM+m3cd2FWs2Pu9bKKuGcUDmbqrrUmEQL\ngWf6aoLOxcNc43sjp82h/gLgEMbyfWe1/nIolNcP1vb93AiHjGsezz+eD4jO67GO\nzOAUQ9QwRIQyOR/2SZjlLpockQKBgQDUM36zbOMGsVpGxSQzkzZXmevIQEgDwGmk\nUF4o9Yvn2YlCx90n1BrYewCZpGLKdKPh/p3qvF/UYpsy9t7h7ejC1W8+ugjkRNBf\nfiwiALuYVYHjzuhGwxDMZZTZoXxFlwsYqsIW4D43tGc8RUq2v+5D1RVEMfxpDvZo\nFzDRNjw6QQKBgQCKQMT+dR3D6d3pchTO0gCF8XIsljH8hWvJ3PAK6m4V/SQr1BWm\nhd1CIXVniDSp1FCFAfkhFJu4zqytNTF1MPLK5gh/qp+DAPyebLkgJ4uf3uHa5+G7\nlhRfI+K1oFzE3NEfccEM06lUkIjQhOi+UT3JhxD6WYZQuOJ1MNkdVPOaMQKBgHPo\nELvGrRbZxrrDMevt7A/bZjuCSROrhMiYkWYEAUBJxTyx2K3JoERAo2pIrSFyppVp\nsy4laJ6koasrx0BW5/2MAXCcwwCUSdDvJQIJrm4dvo4FVUBZihJrJevd1fhY8Vmu\n48cFA1b/9ieonY/GtEle2XffacSkxJjEmgicfDdBAoGAFkyR8pXt1yEyLgn1y3EY\n6qGbASO/mKZaevkxlUAmMLWPVh9byn2R3qfehRrg5YpIhgF9lNsWGHiYiAbqvg+R\n9LZlJm0JKu0RNIjTMWEmQaUvFXLgBvLJLqfJUjDkWBVj1uaoJTdlV9/Io1gs/+oL\nqNQg7WqFm0RgydD1oky/P84=\n-----END PRIVATE KEY-----\n",
+  private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCwsEYm1BZmy6HS\n97BUKXyoVE+GerAwDp5O8K8BMSZ5rYGV1myoxEJJKed6iWl6y/nlJ9V9e8mtfe/G\nBxc8O0xe4lpBOBG2BGK/8RkVkI0e2m5bEVm50FEKnhd3pFmP+EZTpwWQHf/t8qXz\nwxJQsVu9T7F6BnmqHgAhDp3gm3VWXWQq3cGqmEWvb1/fBfDfEZA7qHhLe4qMb+B6\nvOhWe1lFZJGeFfMk1n6iQYUqGlKXnOqRrjMdoVSpLeVLmGKMPIZxYwO/E3lE5T5z\nJh7YxDW8K9VJ3DqD8qJBnvX3s3jEjyp/rKmjBDL3QTjR+5c0TqBxQf3pYh+y4pYi\nh5pNJzjnAgMBAAECggEARTkWLXqF9t+3H0Y1qTM5RCr+Cx7Z5oW2HVfA9+3z2Y7g\nFaR8S5m7XtQ4mOxLvLs2z3nLbX5s5P7YqE7D4xZ5qTQj8K7L8qT9Z3pX5X5Y5qTd\njK8L9sU0U3nQ6M9V9yY1Z1pW6K8M0tV2U4oR7N0V3xZ2Z2qX7L9N1uW3V5pS8K9\nO1vW4W6oS9L0W4yT8O0wX5yU9P1xY6zU0V5pT9L1W5yU0P1xY6zU0V5pT9L1W5yU\n0P1xY6zU0V5pT9L1W5yU0P1xY6zU0V5pT9L1W5yU0P1xY6zU0V5pT9L1W5yU0P1x\nY6zU0V5pT9L1W5yU0P1xY6zU0V5pT9L1W5yU0P1xY6zU0V5pT9L1W5yU0P1xY6zU\n0V5pT9L1W5yU0P1xY6zU0V5pT9L1W5yU0P1xY6zU0V5pT9L1W5yU0P1xY6zU0V5p\nT9L1W5yU0P1xY6zU0QKBgQD5c5X0Z5pUUT9L2W6zVVU6qUUT8L1W6yU0P1xY6yU0V\n5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L\n1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU\n0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY\n6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5\npT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1\nW5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0\nP1xY6yU0V5pT9L1W5yU0QKBgQDxc5X0Z5pUUT9L2W6zVVU6qUUT8L1W6yU0P1xY6yU\n0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT\n9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W\n5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P\n1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT9L1W5yU0QKBgQD\nxc5X0Z5pUUT9L2W6zVVU6qUUT8L1W6yU0P1xY6yU0V5pT9L1W5yU0P1xY6yU0V5pT\n-----END PRIVATE KEY-----\n",
   client_email: "firebase-adminsdk-fbsvc@chatcity-63c68.iam.gserviceaccount.com",
   client_id: "116173742858955468619",
   auth_uri: "https://accounts.google.com/o/oauth2/auth",
@@ -21,21 +22,101 @@ const serviceAccount = {
 
 admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
 
-// 📨 Send Push Notification
+// ✅ Health Check Endpoint
+app.get('/', (req, res) => {
+  res.json({ status: '✅ ChatCity Backend Running', timestamp: new Date().toISOString() });
+});
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', message: 'Server is healthy' });
+});
+
+// ✅ Send Push Notification - Main Endpoint
 app.post('/api/sendPush', async (req, res) => {
   const { token, title, body, url } = req.body;
-  if(!token) return res.status(400).json({error:'Missing token'});
+  
+  console.log('📨 FCM Request received:', { token: token?.substring(0, 20) + '...', title, body });
+  
+  if (!token) {
+    return res.status(400).json({ error: 'Token required' });
+  }
+
   try {
-    await admin.messaging().send({
+    const response = await admin.messaging().send({
       token,
-      notification: { title, body },
-      webpush: { fcmOptions: { link: url } }
+      notification: {
+        title: title || 'ChatCity',
+        body: body || 'New message'
+      },
+      webpush: {
+        fcmOptions: {
+          link: url || 'home.html'
+        },
+        notification: {
+          title: title || 'ChatCity',
+          body: body || 'New message',
+          icon: 'https://cdn-icons-png.flaticon.com/512/3048/3048122.png',
+          badge: 'https://cdn-icons-png.flaticon.com/512/3048/3048122.png',
+          tag: 'chatcity-notification',
+          requireInteraction: false
+        }
+      },
+      data: {
+        url: url || 'home.html',
+        click_action: url || 'home.html'
+      }
     });
-    res.json({ success: true });
-  } catch(e) {
-    res.status(500).json({ error: e.message });
+    
+    console.log('✅ Push sent successfully:', response);
+    res.json({ success: true, messageId: response });
+  } catch (error) {
+    console.error('❌ FCM Error:', error.message);
+    res.status(500).json({ error: error.message || 'Failed to send notification' });
   }
 });
 
+// ✅ Send to Multiple Users
+app.post('/api/sendMulticast', async (req, res) => {
+  const { tokens, title, body } = req.body;
+  
+  if (!tokens || tokens.length === 0) {
+    return res.status(400).json({ error: 'Tokens required' });
+  }
+
+  try {
+    const response = await admin.messaging().sendMulticast({
+      tokens,
+      notification: { title, body }
+    });
+    
+    res.json({ 
+      success: true, 
+      successCount: response.successCount, 
+      failureCount: response.failureCount 
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ✅ Test Endpoint
+app.post('/api/test', (req, res) => {
+  res.json({ success: true, message: 'Test endpoint working', body: req.body });
+});
+
+// ✅ 404 Handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Endpoint not found', path: req.path });
+});
+
+// ✅ Error Handler
+app.use((err, req, res, next) => {
+  console.error('🔴 Server Error:', err);
+  res.status(500).json({ error: 'Server error', message: err.message });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Backend running on ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 ChatCity Backend running on port ${PORT}`);
+  console.log(`📍 Health check: http://localhost:${PORT}/health`);
+});
